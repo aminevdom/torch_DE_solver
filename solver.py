@@ -235,7 +235,6 @@ def point_sort_shift_train_full(grid, model, operator, bconds, grid_point_subset
     nvars = model[0].in_features
 
     # prepare input data to uniform format 
-    
     prepared_grid = grid_prepare(grid)
     bconds = bnd_prepare(bconds, prepared_grid, h=h)
     operator = operator_prepare(operator, prepared_grid, subset=grid_point_subset, true_grid=grid, h=h)
@@ -260,7 +259,7 @@ def point_sort_shift_train_full(grid, model, operator, bconds, grid_point_subset
                                                ,nmodels=None,verbose=cache_verbose,lambda_bound=0.001)
         model, optimizer_state= cache_retrain(model,cache_checkpoint,grid,verbose=cache_verbose)
     
-    
+
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     
     loss = point_sort_shift_loss(model, prepared_grid, operator, bconds, lambda_bound=lambda_bound)
@@ -279,6 +278,8 @@ def point_sort_shift_train_full(grid, model, operator, bconds, grid_point_subset
     
     t = 0
     
+    # min_loss=float(loss)
+    
     last_loss=np.zeros(100)+float(loss)
     line=np.polyfit(range(100),last_loss,1)
     
@@ -296,6 +297,12 @@ def point_sort_shift_train_full(grid, model, operator, bconds, grid_point_subset
         optimizer.step(closure)
         loss = point_sort_shift_loss(model, prepared_grid, operator, bconds, lambda_bound=lambda_bound)
         
+        # if float(loss)<min_loss:
+        #     min_loss=float(loss)
+        #     stop_dings=0
+        # else:
+        #     stop_dings+=1
+        
         last_loss[t%100]=loss
         
         if t%100==0:
@@ -306,6 +313,7 @@ def point_sort_shift_train_full(grid, model, operator, bconds, grid_point_subset
         if (t % 100 == 0) and verbose>1:
 
             print(t, loss.item(), line,line[0]/line[1])
+            # print(t, loss.item())
             solution_print(prepared_grid,model,title='Iteration = ' + str(t), verbose_operator=verbose_operator)
 
         # optimizer.zero_grad()
@@ -344,6 +352,7 @@ def point_sort_shift_train_minibatch(grid, model, operator, bconds, grid_point_s
     
 
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer.load_state_dict(optimizer_state)
     
     loss = point_sort_shift_loss(model, prepared_grid, full_prepared_operator, prepared_bconds, lambda_bound=lambda_bound)
     
